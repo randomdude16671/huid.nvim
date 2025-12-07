@@ -4,12 +4,7 @@ local M = {}
 
 ---@class HuidDefaultConfig
 local default_config = {
-	---@type boolean
-	caching = true,
-	---@type boolean
-	auto_index = false,
-	---@type boolean
-	debug = false,
+	-- TODO: implement configuration options
 }
 
 ---@type HuidDefaultConfig
