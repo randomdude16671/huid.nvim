@@ -34,6 +34,7 @@
             packages = [
               pkgs.lua-language-server
               pkgs.stylua
+              pkgs.opencode
             ];
           };
         }

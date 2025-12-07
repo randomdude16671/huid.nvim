@@ -10,18 +10,9 @@ function M.debug(msg, debug)
 	end
 end
 
----@param str string
----@param pattern string
-function M.matches(str, pattern)
-	if str:match(pattern) then
-		return true
-	else
-		return false
-	end
-end
-
+---@return string
 function M.generate_huid()
-	return os.date("!%Y%d%m-%H%M%S")
+	return tostring(os.date("!%Y%d%m-%H%M%S"))
 end
 
 ---@return boolean|nil

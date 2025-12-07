@@ -6,6 +6,7 @@ local M = {}
 
 ---@param msg string
 ---@param priority integer
+---@param huid string
 function M.make_new(msg, priority, huid)
 	local tasks_dir = util.find_tasks_dir(uv.cwd())
 	if tasks_dir == nil then
@@ -14,16 +15,15 @@ function M.make_new(msg, priority, huid)
 	end
 	local huid_task_path = tasks_dir .. "/" .. huid
 	uv.fs_mkdir(huid_task_path, tonumber("755", 8))
-	uv.fs_open(huid_task_path .. "/TASK.md", "w", tonumber("666", 8), function(err, fd)
-		if err then
-			print("Error opening file: ", err)
-			return
-		end
 
-		local content = "# " .. msg .. "\n\n" .. "- STATUS: open\n-PRIORITY: " .. priority .. "\n"
-		uv.fs_write(fd, content, -1)
-		uv.fs_close(fd)
-	end)
+	local file = io.open(huid_task_path .. "/TASK.md", "w")
+	if file == nil then
+		print("Error opening file through io.open")
+		return
+	end
+	local content = "# " .. msg .. "\n\n" .. "- STATUS: open\n" .. "- PRIORITY: " .. tostring(priority)
+	file:write(content)
+	file:close()
 end
 
 return M
