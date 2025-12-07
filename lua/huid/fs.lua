@@ -1,8 +1,26 @@
+-- TODO: error check uv.fs_mkdir calls in this file
 local util = require("huid.util")
 
 local uv = vim.uv
 
 local M = {}
+
+-- TODO: make this function not depend on Git
+function M.setup_dir()
+	local _git_dir = util.find_dir(".git", uv.cwd())
+	if _git_dir ~= nil then
+		local parent = _git_dir:match("(.*/)")
+
+		if not util.is_dir(parent) then
+			vim.notify("Failed to find parent of the Git directory")
+			return
+		end
+		uv.fs_mkdir(parent .. "/tasks", tonumber("755", 8))
+	else
+		vim.notify("ERR: failed to get version control directory (.git)", vim.levels.ERROR)
+		return
+	end
+end
 
 ---@return string[]|nil
 function M.list_existing()

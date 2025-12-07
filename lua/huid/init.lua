@@ -14,6 +14,10 @@ M.options = {}
 function M.setup(opts)
 	M.options = vim.tbl_deep_extend("force", default_config, opts or {})
 
+	vim.api.nvim_create_user_command("SetupTaskDirectory", function()
+		fs.setup_dir(vim.uv.cwd())
+	end, {})
+
 	-- Convert a TODO comment into a TASK(<HUID>) comment.
 	vim.api.nvim_create_user_command("ConvertTodo", function()
 		require("huid.navigation").convert()
