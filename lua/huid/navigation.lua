@@ -3,6 +3,16 @@ local fs = require("huid.fs")
 
 local M = {}
 
+function M.list()
+	local existing = fs.list_existing()
+	if existing ~= nil then
+	-- TODO: implement list picking functionality
+	else
+		vim.notify("ERR: couldn't list existing", vim.log.levels.ERROR)
+		return
+	end
+end
+
 function M.convert()
 	local line = vim.api.nvim_get_current_line()
 	local pattern = "(.*)TODO:(.*)"

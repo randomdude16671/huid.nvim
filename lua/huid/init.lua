@@ -19,10 +19,23 @@ M.options = {}
 function M.setup(opts)
 	M.options = vim.tbl_deep_extend("force", default_config, opts or {})
 
-	vim.api.nvim_create_user_command("ConvertTodoToTask", function()
+	-- Convert a TODO comment into a TASK(<HUID>) comment.
+	vim.api.nvim_create_user_command("ConvertTodo", function()
 		require("huid.navigation").convert()
 	end, {})
 
+	--[[ 
+    Pick a task through a specified fuzzy picker or go to the default one if only one is present
+    TODO: (yes this isn't in production in my own configuration yet) implement fuzzy picker picking
+  --]]
+	vim.api.nvim_create_user_command("PickTasks", function()
+		require("huid.navigation").list()
+	end, {})
+
+	--[[ 
+    Make a new task
+    TODO: auto comment ability
+  --]]
 	vim.api.nvim_create_user_command("NewTask", function()
 		vim.ui.input({ prompt = "Enter the Task Description, With the priority next to it" }, function(input)
 			local huid = util.generate_huid()
@@ -33,6 +46,7 @@ function M.setup(opts)
 				return
 			end
 			fs.make_new(description, tonumber(priority_str, 10), huid)
+			vim.api.nvim_set_current_line("TASK(" .. huid .. "): " .. description)
 		end)
 	end, {})
 end
