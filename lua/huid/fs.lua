@@ -1,32 +1,38 @@
--- TODO: error check uv.fs_mkdir calls in this file
 local util = require("huid.util")
 
 local uv = vim.uv
 
 local M = {}
 
--- TODO: make this function not depend on Git
-function M.setup_dir()
-	local _git_dir = util.find_dir(".git", uv.cwd())
-	if _git_dir ~= nil then
-		local parent = _git_dir:match("(.*/)")
-
-		if not util.is_dir(parent) then
-			vim.notify("Failed to find parent of the Git directory")
+---@param vcs_dirname string
+---@param start string?
+function M.setup_dir(vcs_dirname, start)
+	start = start or uv.cwd()
+	local vcs_dir_abs = util.find_dir(vcs_dirname, start)
+	if vcs_dir_abs ~= nil then
+		local parent = vcs_dir_abs:match("(.*/)")
+		if not parent then
+			vim.notify("ERR: couldn't extract parent directory from VCS path", vim.log.levels.ERROR)
 			return
 		end
-		uv.fs_mkdir(parent .. "/tasks", tonumber("755", 8))
+
+		if not util.is_dir(parent) then
+			vim.notify("Failed to find parent of the VCS directory", vim.log.levels.ERROR)
+			return
+		end
+
+		uv.fs_mkdir(parent .. "/tasks", tonumber("755", 0))
 	else
-		vim.notify("ERR: failed to get version control directory (.git)", vim.levels.ERROR)
+		vim.notify("ERR: failed to get version control directory (" .. vcs_dirname .. ")", vim.log.levels.ERROR)
 		return
 	end
 end
 
----@return string[]|nil
+---@return table|nil
 function M.list_existing()
 	local tasks_dir = util.find_tasks_dir(uv.cwd())
 	if tasks_dir == nil then
-		vim.notify("ERR: couldn't find tasks directory", vim.levels.log.ERROR)
+		vim.notify("ERR: couldn't find tasks directory", vim.log.levels.ERROR)
 		return
 	end
 
@@ -37,7 +43,13 @@ function M.list_existing()
 		local file = io.open(task_file, "r")
 		if file ~= nil then
 			local task = file:read("*l")
-			table.insert(tasks, tostring(task):sub(3)) -- :sub(3) to skip first 2 characters.
+			if task then
+				table.insert(tasks, { desc = tostring(task):sub(3), file_path = task_file }) -- :sub(3) to skip first 2 characters.
+			else
+				vim.notify("ERR: couldn't read content from file: " .. task_file, vim.log.levels.ERROR)
+				file:close()
+				return
+			end
 			file:close()
 		else
 			vim.notify("ERR: couldn't read file: " .. task_file, vim.log.levels.ERROR)
@@ -45,9 +57,7 @@ function M.list_existing()
 		end
 	end
 
-	if tasks ~= {} then
-		return tasks
-	end
+	return tasks
 end
 
 ---@param msg string

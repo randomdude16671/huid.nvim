@@ -35,7 +35,7 @@ function M.find_dir(dirname, start)
 		end
 
 		local parent = dir:match("(.*)/")
-		if not parent or parent == dir then
+		if not parent or parent == dir or parent == "" then
 			break
 		end
 		dir = parent:gsub("/$", "")
