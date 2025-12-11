@@ -10,16 +10,14 @@ M.pickers = {
 	mini_pick = 4,
 }
 
+M.integrations = {}
+
 -- TODO: implement more configuration options
 ---@class HuidDefaultConfig
 local default_config = {
 	---@type string
 	-- The directory to find to place the tasks directory, found in the project root (required for SetupTaskDirectory)
 	vcs_dirname = ".git",
-	--[[
-  TODO: add auto detection of picker
-  HAS TO BE SET BY USER CURRENTLY!!
-  --]]
 	---@type Pickers
 	picker = nil,
 }
@@ -27,9 +25,38 @@ local default_config = {
 ---@type HuidDefaultConfig
 M.options = {}
 
+function M.detect_picker()
+	do
+		local ok, snacks = pcall(require, "snacks")
+		if ok then
+			M.integrations.snacks = snacks
+		end
+	end
+	do
+		local ok, telescope = pcall(require, "telescope")
+		if ok then
+			M.integrations.telescope = telescope
+		end
+	end
+	do
+		local ok, mini_pick = pcall(require, "mini.pick")
+		if ok then
+			M.integrations.mini_pick = mini_pick
+		end
+	end
+	do
+		local ok, fzf_lua = pcall(require, "fzf-lua")
+		if ok then
+			M.integrations.fzf_lua = fzf_lua
+		end
+	end
+end
+
 ---@param opts HuidDefaultConfig
 function M.setup(opts)
 	M.options = vim.tbl_deep_extend("force", default_config, opts or {})
+
+	M.detect_picker()
 
 	vim.api.nvim_create_user_command("SetupTaskDirectory", function()
 		fs.setup_dir(M.options.vcs_dirname)
@@ -40,13 +67,10 @@ function M.setup(opts)
 		require("huid.navigation").convert()
 	end, {})
 
-	--[[ 
-    Pick a task through a specified fuzzy picker or go to the default one if only one is present
-    -- commented out because potentially unsafe
-    vim.api.nvim_create_user_command("PickTasks", function()
-      require("huid.navigation").list()
-    end, {})
-  --]]
+	-- Pick a task through a specified fuzzy picker or go to the default one if only one is present
+	vim.api.nvim_create_user_command("PickTasks", function()
+		require("huid.navigation").list()
+	end, {})
 
 	-- Make a new task
 	vim.api.nvim_create_user_command("NewTask", function()
@@ -68,12 +92,7 @@ function M.setup(opts)
 				vim.notify("ERR: couldn't get commentstring", vim.log.levels.ERROR)
 				return
 			end
-			vim.api.nvim_set_current_line(
-				string.format(
-					commentstring,
-					"TASK(" .. huid .. "): " .. description
-				)
-			)
+			vim.api.nvim_set_current_line(string.format(commentstring, "TASK(" .. huid .. "): " .. description))
 		end)
 	end, {})
 end

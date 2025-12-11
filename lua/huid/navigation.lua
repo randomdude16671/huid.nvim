@@ -1,5 +1,6 @@
 local util = require("huid.util")
 local fs = require("huid.fs")
+local integrations = require("huid").integrations
 
 local M = {}
 
@@ -10,9 +11,14 @@ function M.list()
 			vim.notify("No tasks to list", vim.log.levels.ERROR)
 			return
 		end
+		local entries = {}
 		for _, task in ipairs(existing) do
-			if require("huid").options.picker == require("huid").pickers.snacks then
-				local entries = {}
+			if
+				integrations.snacks
+				and not integrations.mini_pick
+				and not integrations.fzf_lua
+				and not integrations.telescope
+			then
 				table.insert(entries, {
 					text = task.desc,
 					file = task.file_path,
@@ -22,8 +28,48 @@ function M.list()
 					title = "huid.nvim",
 					items = entries,
 				})
+			elseif integrations.fzf_lua then
+				table.insert(entries, task.file_path)
+				require("fzf-lua").fzf_exec(entries, { prompt = "huid.nvim" })
+			elseif integrations.telescope then
+				local pickers = require("telescope.pickers")
+				local finders = require("telescope.finders")
+				local conf = require("telescope.config").values
+
+				local function huid_picker()
+					table.insert(entries, {
+						text = task.desc,
+						file = task.file_path,
+						dir = false,
+					})
+
+					pickers
+						.new({}, {
+							prompt_title = "huid.nvim",
+
+							finder = finders.new_table({
+								results = entries,
+								entry_maker = function(entry)
+									return {
+										value = entry,
+										display = entry.text,
+										ordinal = entry.text,
+										path = entry.file,
+									}
+								end,
+							}),
+
+							sorter = conf.generic_sorter({}),
+						})
+						:find()
+				end
+				huid_picker()
+			elseif integrations.mini_pick then
+				local MiniPick = require("mini.pick")
+				table.insert(entries, task.file_path)
+				MiniPick.start({ source = { items = entries } })
 			else
-				vim.notify("ERR: not implemented for other pickers!", vim.log.levels.ERROR)
+				vim.notify("No picker!", vim.log.levels.ERROR)
 				return
 			end
 		end
