@@ -2,14 +2,6 @@ local uv = vim.uv
 
 local M = {}
 
----@param msg string
----@param debug boolean
-function M.debug(msg, debug)
-	if debug then
-		vim.notify(msg, vim.log.levels.DEBUG)
-	end
-end
-
 ---@return string
 function M.generate_huid()
 	return tostring(os.date("!%Y%d%m-%H%M%S"))
