@@ -26,28 +26,17 @@ local default_config = {
 M.options = {}
 
 function M.detect_picker()
-	do
-		local ok, snacks = pcall(require, "snacks")
+	local pickers = {
+		{ name = "snacks", module = "snacks", integration = "snacks" },
+		{ name = "telescope", module = "telescope", integration = "telescope" },
+		{ name = "mini_pick", module = "mini.pick", integration = "minipick" },
+		{ name = "fzf_lua", module = "fzf-lua", integration = "fzf_lua" },
+	}
+
+	for _, picker in ipairs(pickers) do
+		local ok, module = pcall(require, picker.module)
 		if ok then
-			M.integrations.snacks = snacks
-		end
-	end
-	do
-		local ok, telescope = pcall(require, "telescope")
-		if ok then
-			M.integrations.telescope = telescope
-		end
-	end
-	do
-		local ok, mini_pick = pcall(require, "mini.pick")
-		if ok then
-			M.integrations.mini_pick = mini_pick
-		end
-	end
-	do
-		local ok, fzf_lua = pcall(require, "fzf-lua")
-		if ok then
-			M.integrations.fzf_lua = fzf_lua
+			M.integrations[picker.integration] = module
 		end
 	end
 end

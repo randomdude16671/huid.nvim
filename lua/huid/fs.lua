@@ -21,7 +21,7 @@ function M.setup_dir(vcs_dirname, start)
 			return
 		end
 
-		uv.fs_mkdir(parent .. "/tasks", tonumber("755", 0))
+		uv.fs_mkdir(parent .. "/tasks", tonumber("755", 8))
 	else
 		vim.notify("ERR: failed to get version control directory (" .. vcs_dirname .. ")", vim.log.levels.ERROR)
 		return
