@@ -1,26 +1,61 @@
--- TASK(20251112-154512): Add new issues included into the repo 
+-- TASK(20251112-154512): Add new issues included into the repo
 local util = require("huid.util")
 local fs = require("huid.fs")
 local M = {}
 
+-- Enums:
 ---@enum Pickers
-M.pickers = {
+local Pickers = {
 	snacks = 1,
 	telescope = 2,
 	fzf_lua = 3,
 	mini_pick = 4,
 }
 
+M.pickers = Pickers
 M.integrations = {}
 
--- TODO: implement more configuration options
+-- Configuration types:
+
+---@alias WindowBorder
+---| "none"
+---| "single"
+---| "double"
+---| "rounded"
+---| "solid"
+---| "shadow"
+---| "bold"
+
+---@alias WindowKind
+---| "full"
+---| "floating"
+---| "vsplit"
+---| "hsplit"
+
+---@class HuidWindowConfig
+---@field window_kind WindowKind
+---@field border_kind WindowBorder
+
 ---@class HuidDefaultConfig
+---@field vcs_dirname string
+---@field picker Pickers?
+---@field auto_setup_dir boolean
+---@field window HuidWindowConfig
+
+-- Default configuration
+---@type HuidDefaultConfig
 local default_config = {
-	---@type string
-	-- The directory to find to place the tasks directory, found in the project root (required for SetupTaskDirectory)
+	-- The directory to find to place the tasks directory,
+	-- found in the project root (required for SetupTaskDirectory)
 	vcs_dirname = ".git",
-	---@type Pickers
+
 	picker = nil,
+	auto_setup_dir = false,
+
+	window = {
+		window_kind = "hsplit",
+		border_kind = "single",
+	},
 }
 
 ---@type HuidDefaultConfig
@@ -42,7 +77,7 @@ function M.detect_picker()
 	end
 end
 
----@param opts HuidDefaultConfig
+---@param opts HuidDefaultConfig?
 function M.setup(opts)
 	M.options = vim.tbl_deep_extend("force", default_config, opts or {})
 
@@ -69,19 +104,24 @@ function M.setup(opts)
 				vim.notify("ERR: task input cancelled", vim.log.levels.ERROR)
 				return
 			end
+
 			local huid = util.generate_huid()
-			local pattern = "(.-)(%d+)$" -- non-greedy match until digits at end
+			local pattern = "(.-)(%d+)$"
 			local description, priority_str = input:match(pattern)
+
 			if not description or not priority_str then
 				vim.notify("ERR: the request doesn't match the proper requested data.", vim.log.levels.ERROR)
 				return
 			end
+
 			fs.make_new(description, tonumber(priority_str, 10), huid)
+
 			local commentstring = vim.api.nvim_get_option_value("commentstring", {})
 			if not commentstring then
 				vim.notify("ERR: couldn't get commentstring", vim.log.levels.ERROR)
 				return
 			end
+
 			vim.api.nvim_set_current_line(string.format(commentstring, "TASK(" .. huid .. "): " .. description))
 		end)
 	end, {})
