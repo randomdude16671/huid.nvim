@@ -3,10 +3,15 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    git-hooks.url = "github:cachix/git-hooks.nix";
   };
 
   outputs =
-    { self, nixpkgs }:
+    {
+      self,
+      nixpkgs,
+      git-hooks,
+    }:
     let
       systems = [
         "x86_64-linux"
@@ -26,18 +31,52 @@
         );
     in
     {
-      devShells = forEachSystem (
-        { pkgs, ... }:
+
+      formatter = forEachSystem (
+        { pkgs, system }:
+        let
+          config = self.checks.${system}.pre-commit-check.config;
+          inherit (config) package configFile;
+          script = ''
+            ${pkgs.getExe package} run --all-files --config ${configFile}
+          '';
+        in
+        pkgs.writeShellScriptBin "pre-commit-run" script
+      );
+
+      checks = forEachSystem (
+        { system, pkgs }:
         {
-          default = pkgs.mkShell {
-            name = "huid";
-            packages = [
-              pkgs.lua-language-server
-              pkgs.stylua
-              pkgs.opencode
-            ];
+          pre-commit-check = git-hooks.lib.${system}.run {
+            src = ./.;
+            package = pkgs.prek;
+            hooks = {
+              nixfmt-rfc-style.enable = true;
+              stylua.enable = true;
+
+              convco.enable = true;
+            };
           };
         }
       );
+
+      devShells = forEachSystem (
+        { pkgs, system }:
+        let
+          inherit (self.checks.${system}.pre-commit-check) shellHook enabledPackages;
+        in
+        {
+          default = pkgs.mkShell {
+            name = "huid";
+            inherit shellHook;
+            packages = [
+              pkgs.lua-language-server
+              pkgs.opencode
+            ];
+            buildInputs = enabledPackages;
+          };
+        }
+      );
+
     };
 }
